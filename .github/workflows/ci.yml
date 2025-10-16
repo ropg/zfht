@@ -24,6 +24,22 @@ jobs:
       - name: Install scripts
         run: make install PREFIX=$PWD/local
 
+      - name: Generate docs
+        run: make docs
+
+      - name: Commit and push docs
+        if: github.event_name != 'pull_request'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/
+          if git diff --staged --quiet; then
+            echo "No docs changes to commit"
+          else
+            git commit -m "Auto-generated docs from man pages"
+            git push
+          fi
+
       - name: Shell syntax check
         run: sh -n zfht zfht-update-serial zfht-sign
 
