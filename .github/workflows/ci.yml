@@ -26,9 +26,11 @@ jobs:
         run: make docs
 
       - name: Commit and push docs
+        if: github.event_name != 'pull_request'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          git remote set-url origin https://${{ secrets.DOCS_TOKEN }}@github.com/${{ github.repository }}.git
           git add docs/
           if git diff --staged --quiet; then
             echo "No docs changes to commit"
