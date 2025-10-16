@@ -16,10 +16,10 @@ jobs:
         with:
           token: ${{ secrets.DOCS_TOKEN }}
 
-      - name: Install mandoc, shellcheck, and bind9utils
+      - name: Install mandoc, shellcheck, bind9utils, and pandoc
         run: |
           sudo apt-get update
-          sudo apt-get install -y mandoc shellcheck bind9utils
+          sudo apt-get install -y mandoc shellcheck bind9utils pandoc
 
       - name: Install scripts
         run: make install PREFIX=$PWD/local

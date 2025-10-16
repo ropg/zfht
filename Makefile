@@ -14,12 +14,20 @@ docs:
 	@mkdir -p docs
 	@for m in $(MANPAGES); do \
 		base=$$(basename $$m .8); \
-		if mandoc -T markdown $$m > docs/$$base.md 2>/dev/null; then \
-			echo "generated docs/$$base.md"; \
+		echo "Converting $$m to docs/$$base.md..."; \
+		if mandoc -T markdown $$m > docs/$$base.md 2>/dev/null && [ -s docs/$$base.md ]; then \
+			echo "generated docs/$$base.md (via mandoc)"; \
 		else \
-			echo "mandoc -T markdown not supported, using pandoc fallback"; \
-			pandoc -s -f man -t gfm $$m -o docs/$$base.md; \
-			echo "generated docs/$$base.md (via pandoc)"; \
+			echo "mandoc failed, trying pandoc..."; \
+			if pandoc -s -f man -t gfm $$m -o docs/$$base.md 2>/dev/null && [ -s docs/$$base.md ]; then \
+				echo "generated docs/$$base.md (via pandoc)"; \
+			else \
+				echo "ERROR: Failed to convert $$m to markdown"; \
+				echo "Creating placeholder for $$m"; \
+				echo "# $$base" > docs/$$base.md; \
+				echo "" >> docs/$$base.md; \
+				echo "Manual page: \`$$m\`" >> docs/$$base.md; \
+			fi; \
 		fi; \
 	done
 
