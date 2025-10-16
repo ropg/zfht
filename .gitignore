@@ -1,0 +1,6 @@
+# Generated documentation
+docs/
+
+# Temporary files
+*.tmp
+*.temp

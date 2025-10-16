@@ -15,19 +15,16 @@ docs:
 	@for m in $(MANPAGES); do \
 		base=$$(basename $$m .8); \
 		echo "Converting $$m to docs/$$base.md..."; \
-		if mandoc -T markdown $$m > docs/$$base.md 2>/dev/null && [ -s docs/$$base.md ]; then \
-			echo "generated docs/$$base.md (via mandoc)"; \
+		if mandoc -T html $$m 2>/dev/null | pandoc -f html -t gfm -o docs/$$base.md 2>/dev/null && [ -s docs/$$base.md ]; then \
+			echo "generated docs/$$base.md (via mandoc+html+pandoc)"; \
+		elif pandoc -s -f man -t gfm $$m -o docs/$$base.md 2>/dev/null && [ -s docs/$$base.md ]; then \
+			echo "generated docs/$$base.md (via pandoc)"; \
 		else \
-			echo "mandoc failed, trying pandoc..."; \
-			if pandoc -s -f man -t gfm $$m -o docs/$$base.md 2>/dev/null && [ -s docs/$$base.md ]; then \
-				echo "generated docs/$$base.md (via pandoc)"; \
-			else \
-				echo "ERROR: Failed to convert $$m to markdown"; \
-				echo "Creating placeholder for $$m"; \
-				echo "# $$base" > docs/$$base.md; \
-				echo "" >> docs/$$base.md; \
-				echo "Manual page: \`$$m\`" >> docs/$$base.md; \
-			fi; \
+			echo "ERROR: Failed to convert $$m to markdown"; \
+			echo "Creating placeholder for $$m"; \
+			echo "# $$base" > docs/$$base.md; \
+			echo "" >> docs/$$base.md; \
+			echo "Manual page: \`$$m\`" >> docs/$$base.md; \
 		fi; \
 	done
 
