@@ -47,7 +47,7 @@ ZSK_PUB="keys/zsk/$ZONE.key"
 if [ ! -f "$KSK_PRIV" ] || [ ! -f "$KSK_PUB" ]; then
     echo "Generating KSK key for $ZONE"
     mkdir -p /tmp/keys_$$
-    _do dnssec-keygen -a ECDSAP256SHA256 -K /tmp/keys_$$ -f KSK $ZONE
+    _do dnssec-keygen -a ECDSAP256SHA256 -K /tmp/keys_$$ -f KSK "$ZONE"
     mv /tmp/keys_$$/*.private keys/ksk/$ZONE.private
     mv /tmp/keys_$$/*.key keys/ksk/$ZONE.key
     rm -rf /tmp/keys_$$
@@ -56,7 +56,7 @@ fi
 if [ ! -f "$ZSK_PRIV" ] || [ ! -f "$ZSK_PUB" ]; then
     echo "Generating ZSK key for $ZONE"
     mkdir -p /tmp/keys_$$
-    _do dnssec-keygen -a ECDSAP256SHA256 -K /tmp/keys_$$ -f ZSK $ZONE
+    _do dnssec-keygen -a ECDSAP256SHA256 -K /tmp/keys_$$ "$ZONE"
     mv /tmp/keys_$$/*.private keys/zsk/$ZONE.private
     mv /tmp/keys_$$/*.key keys/zsk/$ZONE.key
     rm -rf /tmp/keys_$$
