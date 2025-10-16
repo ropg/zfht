@@ -1,0 +1,55 @@
+.TH zfht-update-serial 8 "October 2025" "Zone File Helper Tool" "System Administration Commands".SH NAME
+zfht-update-serial \- Update SOA serial number in DNS zone files
+.SH SYNOPSIS
+\fBzfht-update-serial\fR [\fB\-q\fR] \fIzone_file\fR
+
+.SH DESCRIPTION
+\fBzfht-update-serial\fR automatically updates the SOA serial number in DNS zone files. Supports both single-line and multi-line SOA record formats. New serial number is in format YYYYMMDDNN where NN is 01 unless a previous serial with today's date was found, in which case the current serial number is incremented by one.
+
+\fBzfht-update-serial\fR comes bundled with \fBzfht\fR to manage changes and dependencies in zone files and \fBzfht-sign\fR to completely automate DNSSEC key generation and zone signing. 
+
+.SH OPTIONS
+.TP
+\fB\-q\fR
+Quiet mode. Suppress error messages and exit without error when no SOA record is found.
+
+.SH SOA FORMAT SUPPORT
+The script handles SOA record on a single line:
+
+.RS 4
+.nf
+example.com. 900 IN SOA ns1.example.com. admin.example.com. 2025010101 7200 3600 86400 300
+.fi
+.RE
+
+But also spread out over multiple lines like this:
+
+.RS 4
+.nf
+example.com. 900 IN SOA ns1.example.com. admin.example.com. (
+    2025010101    ; serial
+    7200          ; refresh
+    3600          ; retry
+    86400         ; expire
+    300           ; minimum
+)
+.fi
+.RE
+
+.SH EXAMPLE
+.RS 2
+.nf
+zfht-update-serial -q example.com
+Updated serial from 2025100601 to 2025100602 in example.com
+.fi
+.RE
+
+.SH FILES
+zfht-update-serial modifies the zone file in place using sed.
+
+.SH SEE ALSO
+.BR zfht (8),
+.BR zfht-sign (8)
+
+.SH AUTHOR
+Rop Gonggrijp, 2025

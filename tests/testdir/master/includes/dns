@@ -1,0 +1,3 @@
+@		IN	SOA ns0.rop.nl. hostmaster.rop.nl. 2025101305 3600 900 1209600 3600
+		IN	NS	ns4.rop.nl.
+		IN	NS	ns3.rop.nl.

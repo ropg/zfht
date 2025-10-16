@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install mandoc, shellcheck, and dnsutils
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mandoc shellcheck dnsutils
+
+      - name: Generate docs
+        run: make docs
+
+      - name: Shell syntax check
+        run: sh -n zfht zfht-update-serial zfht-sign
+
+      - name: Shell lint
+        run: shellcheck zfht zfht-update-serial zfht-sign
+
+      - name: Run tests
+        run: make test
+        

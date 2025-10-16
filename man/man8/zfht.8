@@ -1,0 +1,193 @@
+.TH zfht 8 "October 2025" "Zone File Helper Tool" "System Administration Commands"
+.SH NAME
+zfht \- Zone file change detection, automates nameserver mgmt, follows $INCLUDEs, runs user scripts
+.SH SYNOPSIS
+.B zfht
+[\fB\-d\fR] [\fB\-a\fR] [\fB\-w\fR] [\fB\-t\fR] [\fB\-z\fR \fIZONESDIR\fR] [\fB\-s\fR \fIZONESSUBDIR\fR] [\fIfiles\fR...]
+.SH DESCRIPTION
+\fBzfht\fR (Zone File Helper Tool) helps you manage DNS zone files for use with authoritative name servers such as \fBnsd\fR or \fBbind\fR.
+
+\fBzfht\fR is ran from a directory holding zone files and optional subdirs with included snippets and detects changes to zone files or any files they recursively $INCLUDE. \fBzfht\fR uses its companion tool \fBzfht-update-serial\fR to automatically increase any affected SOA serial numbers and can execute user-specified scripts to automate the management of common DNS nameserver setups. Companion tool \fBzfht-sign\fR completely automates the key generation and signing of records for DNSSEC.
+
+In \fBfile mode\fR, if one or multiple files are given on the command line, it considers these files modified, figures out all the files that depend on them, as well as files they in turn depend on. If a user script is provided, it will be ran for each modified zone file.
+
+In \fBtimestamp mode\fR, when no files are given, \fBzfht\fR uses a file stored after a previous invocation to auto-detect which files were modified since that file was created. Since that file contains a list of zone files, it can also see which zone files have newly appeared and disappeared since its previous invocation. \fBzfht\fR can run user scripts for addition, removal or modification of zones. If there is no previous state file yet, you can either run with \fB\-a\fR to process everything as newly appeared, or run with \fB\-w\fR once to store the current state without processing anything.
+
+In either mode, you can specify -t to have \fBzfht\fR touch any zone files affected by changes to included files, which allows some name server software to automatically reload affected domains.
+
+.SH "ZONESDIR" DIRECTORY
+
+Unless you use -z or set the ZONESDIR environment variable, \fBzfht\fR assumes it is invoked from a directory that is the parent to any zone files or snippets, and the root of any $INCLUDE directives in your zone files. Unless you specify ZONESSUBDIR (see below), it assumes the \fBzone files\fR for the domains your name server is authoritative for are the only files directly in that directory itself. These files should either have the names of the various DNS zones (domains) served, or the names of the zones followed by \fI.zone\fR. One or multiple subdiretories can contain \fBinclude files\fR, snippets to be included in these zone files. These includes should use relative paths, starting at ZONESDIR.
+
+.SH "ZONESSUBDIR" DIRECTORY
+
+If you keep your zone files in a subdirectory of ZONESDIR, you can set it with ZONESSUBDIR variable, or using -s. Specify a relative path, starting from ZONESDIR. Only zone files for domains you are authoritative for should be in this directory directly.
+
+.SH OPTIONS
+.TP
+\fB\-d\fR
+Dry run. Shows zfht's view on what files changed and the various dependencies, as well as what would be done without executing any commands or changing any files.
+.TP
+\fB\-a\fR
+Process all files (timestamp mode only).
+.TP
+\fB\-w\fR
+Write the current state file (\fI.zfht/lastrun\fR) and exit without processing. Useful to initialize timestamp mode on first use.
+.TP
+\fB\-t\fR
+Touch zone files that depend on changed files to bump modification times.
+.TP
+\fB\-z\fR
+Specify ZONESDIR (see above)
+.TP
+\fB\-s\fR
+Specify ZONESSUBDIR (see above)
+
+.SH TIMESTAMP MODE
+
+If invoked without any filenames, \fBzfht\fR runs in timestamp mode. On first use (when \fI.zfht/lastrun\fR does not yet exist), \fBzfht\fR does not modify anything by default. It merely tells you to initialize with \fB\-w\fR or \fB\-a\fR
+.RS 4
+.IP \(bu 2
+run with \fB\-w\fR once to write \fI.zfht/lastrun\fR (stores the current set of zone files) and exit; or
+.IP \(bu 2
+run with \fB\-a\fR to process all files.
+.RE
+
+If instead the \fIlastrun\fR file is found, a number of internal lists are compiled. (Use the dry run mode to have zfht output these lists.)
+
+.TP
+\fBCHANGED\fR
+files that were changed becauee they were specified or because they were modified after the creation of the lastrun file.
+
+.TP
+\fBINCLUDERS\fR
+files that were not themselves changed, but that include one or more modified files, even if the modified file is an include of an include.
+
+.TP
+\fBINCLUDED\fR
+files not previously listed that were included by files that were modified, or by files that included them.
+
+.TP
+\fBADDED_ZONEFILES\fR
+zone files that appeared since the last run.
+
+.TP
+\fBAFFECTED_ZONEFILES\fR
+zone files that were already there but either modified since \fIlastrun\fR was last written or affected by a modification in one of the included files, recursively.
+.TP
+\fBDELETED_ZONEFILES\fR
+zone files that were there last time, but that are gone now.
+
+.P
+
+\fBzfht\fR will then run \fBzfht\-update\-serial\fR \fB\-q\fR \fIfile\fR for all affected files (\fBCHANGED\fR, \fBINCLUDERS\fR and \fBINCLUDED\fR). This finds any files with SOA serial numbers (both in single and multi-line formats) and increases these numbers. The \fB\-q\fR option causes nothing to be printed when no SOA serial number is found. The format is YYYYMMDDSSm where SS is increased from 01. See the man page for \fBzfht\-update\-serial\fR for further details.
+
+If the \fB\-t\fR option was specified, \fBzfht\fR will then touch all files on the \fBINCLUDERS\fR list, so that any file that depends on a changed file will now itself be recognized as changed. If, for example, you use \fBnsd\fR as your name server, this is enough for \fBnsd\-control\fR \fBreload\fR to recognize changed zones and reload them.
+
+If an executable file called \fIaddzone\fR exists in the \fI.zfht\fR subdirectory, it will be called for each zone that appeared since the last invocation. The zone name and the file name will be the first and second argument. (They are mostly the same in our case, but the zone name will have \fI.zone\fR removed if you name your zone files like that.) The same holds true for the user scripts \fImodzone\fR and \fIdelzone\fR, executed for zones that were modified and for those for whom the zone file has disappeared.
+
+Lastly, if no errors were returned by any of the external scripts, the new list of zone files is written to the \fIlastrun\fR file. If \fB\-w\fR was used, only the state is written and no processing occurs.
+
+.SH FILE MODE
+
+\fBFile mode\fR is much like timestamp mode, except you specify any modified files on the command line. (All the files have to specified relative to the zone file directory.) The same lists for \fBINCLUDERS\fR and \fBINCLUDED\fR are then compiled, you can use \fB\-t\fR to touch all \fBINCLUDERS\fR, and the \fImodzone\fR script is called for modified zones. But there's no tracking of added or deleted domains, and no reading or writing of the \fIlastrun\fR timestamp file.
+
+.SH EXAMPLE USING -tell
+Let's assume we're running an nsd nameserver on FreeBSD, for example in a FreeBSD jail. Install the nsd package and make sure \fIzfht\fR, \fIzfht-update-serial\fR and \fIzfht-sign\fR are somewhere in your PATH. (Also copy the files from \fIman/man8/\fR to \fI/usr/local/share/man/man8\fR if you want the manual pages.) By default, your zone files are in \fI/usr/local/etc/nsd/master\fR. Let's say we create a subdirectory \fIincludes\fR underneath that, and make some files for snippets that are used in many domains.
+
+.TP
+\fBmaster/includes/dns\fR
+.RS 4
+.nf
+@       IN  SOA ns0.example.nl. hostmaster.example.nl. 2025100801 3600 900 1209600 3600
+        IN  NS  ns0.example.nl.
+        IN  NS  ns1.example.nl.
+.fi
+.RE
+
+.TP
+\fBmaster/includes/mail\fR
+.RS 4
+.nf
+@       IN  MX  0 mail.example.nl.
+        IN  TXT "v=spf1 mx ~all"
+*       IN  MX  0 mail.example.nl.
+        IN  TXT "v=spf1 mx ~all"
+key1._domainkey IN TXT "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEB <etc etc>
+.fi
+.RE
+
+.TP
+\fBmaster/includes/webproxy\fR
+.RS 4
+.nf
+@       IN  A       95.216.43.110
+*       IN  A       95.216.43.110
+.fi
+.RE
+
+Now for any domains that the nameserver serves and for which you just want to send/receive all the mail on the mail server and all the web traffic on the proxy, the zone files are all the same and they simply read:
+
+.TP
+\fBmaster/somedomain.com\fR
+.RS 4
+.nf
+$INCLUDE "master/includes/dns"
+$INCLUDE "master/includes/mail"
+$INCLUDE "master/includes/webproxy"
+.fi
+.RE
+
+zfht just keeps the zones you serve consistent and correct. It's easiest if you tell it where the zone files are.
+
+.TP
+add to \fB~/.profile\fR:
+.RS 4
+.nf
+export ZONESDIR=/usr/local/etc/nsd
+export ZONESSUBDIR=master
+.fi
+.RE
+
+If you never add or delete domains or hardcode each one in your \fInsd.conf\fR, all you need to do is run \fBzfht -t\fR followed by \fBnsd-control reload\fR after each time you make a change. With the -t option, \fBzfht\fR will simply touch any file that depends on a file that was changed since the last time it was invoked, so nsd-control can reload all the zones with changes.
+
+.SH LOADING ZONES DYNAMICALLY USING NSD
+
+Now assuming we generate an ssh key and put it's pubkey in authorized_keys on the ns1 secondary server(/jail), we can put the following in three scripts in a newly created .zfht subdirectory and make them executable.
+
+.TP
+\fBmaster/.zfht/addzone\fR
+.RS 2
+.nf
+#!/bin/sh
+nsd-control addzone $1 master
+ssh root@ns1.example.nl nsd-control addzone $1
+.fi
+.RE
+
+.TP
+\fBmaster/.zfht/modzone\fR
+.RS 2
+.nf
+#!/bin/sh
+nsd-control reload $1
+.fi
+.RE
+
+.TP
+\fBmaster/.zfht/delzone\fR
+.RS 2
+.nf
+#!/bin/sh
+nsd-control delzone $1
+ssh root@ns1.example.nl nsd-control delzone $1
+.fi
+.RE
+
+Now if we invoke \fBzfht -a\fR, all zones will be added to the nameverver and to the secondary. After any changes, simply run \fBzfht\fR without arguments. Now adding a new domain is as simply as putting the file in \fImaster\fR. Deleting a domain it is as simple as deleting the file.
+
+.SH SEE ALSO
+.BR zfhd-update-serial (8),
+.BR zfhd-sign (8)
+.SH AUTHOR
+Rop Gonggrijp, 2025

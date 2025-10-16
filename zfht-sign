@@ -1,0 +1,90 @@
+#!/bin/sh
+
+USAGE="Usage: zfht-sign [-q] [-z <zonesdir>] <zone> <zone_file>"
+
+_do() { [ "$QUIET" ] && "$@" >/dev/null 2>&1 || "$@"; }
+_err() { printf "ERROR: "; for _errline in "$@"; do echo "$_errline" >&2; done; exit 1; }
+
+# Check for dependencies
+for cmd in dnssec-signzone dnssec-keygen; do
+    which $cmd >/dev/null 2>&1 || _err "$cmd not found" "Please install the bind tools, see man zfht-sign."
+done
+
+# Parse options
+while [ $# -gt 0 ]; do
+	case "$1" in
+        -q) QUIET="(Try again without -q to see the errors)"; shift ;;
+        -z) ZONESDIR=$2; shift; shift ;;
+		-*) _err "Unknown option: $1" "$USAGE";;
+		*) break ;;
+	esac
+done
+
+[ $# -ne 2 ] && _err "$USAGE"
+
+# Defaults to everything in current directory
+ZONESDIR=${ZONESDIR:-$(pwd)}
+[ ! -d "$ZONESDIR" ] && _err "ZONESDIR $ZONESDIR not found"
+
+ZONE="$1"
+ZONEFILE="$2"
+
+# Everything now relative to ZONESDIR
+cd "$ZONESDIR"
+
+[ ! -f "$ZONEFILE" ] && _err "Zone file $ZONEFILE not found"
+
+mkdir -p signed
+mkdir -p keys/ksk
+mkdir -p keys/zsk
+
+KSK_PRIV="keys/ksk/$ZONE.private"
+KSK_PUB="keys/ksk/$ZONE.key"
+ZSK_PRIV="keys/zsk/$ZONE.private"
+ZSK_PUB="keys/zsk/$ZONE.key"
+
+# Generate keys if they don't exist
+if [ ! -f "$KSK_PRIV" ] || [ ! -f "$KSK_PUB" ]; then
+    echo "Generating KSK key for $ZONE"
+    mkdir -p /tmp/keys_$$
+    _do dnssec-keygen -a ECDSAP256SHA256 -K /tmp/keys_$$ -f KSK $ZONE
+    mv /tmp/keys_$$/*.private keys/ksk/$ZONE.private
+    mv /tmp/keys_$$/*.key keys/ksk/$ZONE.key
+    rm -rf /tmp/keys_$$
+    { [ ! -f "$KSK_PRIV" ] || [ ! -f "$KSK_PUB" ]; } && _err "KSK key generation failed for $ZONE" "$QUIET"
+fi
+if [ ! -f "$ZSK_PRIV" ] || [ ! -f "$ZSK_PUB" ]; then
+    echo "Generating ZSK key for $ZONE"
+    mkdir -p /tmp/keys_$$
+    _do dnssec-keygen -a ECDSAP256SHA256 -K /tmp/keys_$$ -f ZSK $ZONE
+    mv /tmp/keys_$$/*.private keys/zsk/$ZONE.private
+    mv /tmp/keys_$$/*.key keys/zsk/$ZONE.key
+    rm -rf /tmp/keys_$$
+    { [ ! -f "$ZSK_PRIV" ] || [ ! -f "$ZSK_PUB" ]; } && _err "ZSK key generation failed for $ZONE" "$QUIET"
+fi
+
+# Create temporary zone file
+TMP_ZONE="/tmp/temp_$ZONE_$$"
+cp $ZONEFILE "$TMP_ZONE"
+
+# Add DNSKEY records for the public keys to the temporary zone file
+echo "" >> "$TMP_ZONE"
+cat "$KSK_PUB" >> "$TMP_ZONE"
+cat "$ZSK_PUB" >> "$TMP_ZONE"
+
+# Sign the zone using the private keys
+TMP_SIGNED="/tmp/signed_$ZONE_$$"
+_do dnssec-signzone -f "$TMP_SIGNED" -o "$ZONE" "$TMP_ZONE" "$KSK_PRIV" "$ZSK_PRIV"
+[ $? -ne 0 ] && _err "dnssec-signzone error code $? when signing zone $ZONE" "$QUIET"
+[ ! -f "$TMP_SIGNED" ] && _err "dnssec-signzone failed to write output for zone $ZONE" "$QUIET"
+
+# Move DS record to keys/ksk directory
+mv dsset-$ZONE. keys/ksk/$ZONE.ds >/dev/null 2>&1
+
+# Move signed zone in place and clean up
+mv "$TMP_SIGNED" "signed/$ZONE"
+rm -f "$TMP_ZONE"
+
+# Tada!
+echo "Signed zone $ZONE"
+exit 0

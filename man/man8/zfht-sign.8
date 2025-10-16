@@ -1,0 +1,85 @@
+.TH zfht-sign 8 "October 2025" "Zone File Helper Tool" "System Administration Commands"
+
+.SH NAME
+zfht-sign \- Automate key generation and zone file signing for DNSSEC
+
+.SH SYNOPSIS
+.B zfht-sign [-q] \fIzone\fR \fIzone_file\fR
+
+.SH DESCRIPTION
+\fBzfht-sign\fR lets you generate keys and DNSSEC sign zone files without you having to learn arcane stuff and messing around. It tries to do what I believe is the right thing: it signs zone files using the ECDSAP256SHA256 algorithm, automatically generates KSK (Key Signing Key) and ZSK (Zone Signing Key) if they don't exist and creates a signed version of the zone.
+
+.SH DEPENDENCIES
+\fBzfht-sign\fR depends on \fBdnssec-keygen\fR and \fBdnssec-signzone\fR, which come with the \fBbind nameserver\fR. They are part of the bind tools and need to be installed and in the PATH on the system. Depending on your flavor of unix, the package might be called \fBbind9utils\fR, \fBbind-tools\fR, \fBbind-utils\fR, or the tools might be part of the main \fBbind\fR package. (Note that I would recommend using the \fBnsd\fR nameserver made by NLnet Labs over using bind, we just use bind's tools for dnssec.)
+
+.SH THE ZONESDIR DIRECTORY
+\fBzfht-sign\fR defines a directory it calls \fIZONESDIR\fR that has a \fIkeys\fR and a \fIsigned\fR subdirectory for key and signed zone files respectively. If these do not exist, they will be created. If nothing is specified it assumes it is started from the directory it is supposed to use. You can use the -z option or set the ZONESDIR environment variable to ensure it finds/creates keys and writes files where you want them.
+
+.SH SIGNING A ZONE
+If you invoke \fBzfht-sign\fR with a zone (domain) name and and a zone file as arguments, it will see in the \fIkeys\fR directory if it can find a Zone Signing Key and a Key Signing Key for this zone. If keys are not found, they will be generated. After that's done, the zone file will be parsed, all the records will be signed, and a new signed zone file will be created in the \fIsigned\fR sub-directory.
+
+.SH OPTIONS
+.TP
+\fB\-q\fR
+Quiet mode. Suppress output from the dnssec-keygen and dnssec-signzone commands.
+
+.SH ARGUMENTS
+.TP
+\fIzone\fR
+The zone name (e.g., example.com)
+.TP
+\fIzone_file\fR
+Path to the unsigned zone file, either absolute or relative from ZONESDIR.
+
+.SH OUTPUT FILES
+.TP
+\fIsigned/<zone>\fR
+The signed zone file
+.TP
+\fIkeys/ksk/<zone>.ds\fR
+DS record for delegation, provide to your domain registrar.
+.TP
+\fIkeys/ksk/<zone>.private\fR
+KSK private key
+.TP
+\fIkeys/ksk/<zone>.key\fR
+KSK public key
+.TP
+\fIkeys/zsk/<zone>.private\fR
+ZSK private key
+.TP
+\fIkeys/zsk/<zone>.key\fR
+ZSK public key
+
+.SH EXAMPLES
+Sign a zone wthout showing tool output:
+.PP
+.RS
+.B zfht-sign -q example.com master/example.com
+.RE
+.PP
+Typical output:
+.PP
+.RS
+\fBGenerating KSK key for example.com\fR
+.br
+\fBGenerating ZSK key for example.com\fR
+.br
+\fBSigned zone example.com\fR
+.RE
+
+.SH TEMPORARY FILES
+.TP
+\fI/tmp/temp_<zone>_<$$>\fR
+Temporary zone file (automatically cleaned up)
+.TP
+\fI/tmp/keys_<$$>\fR
+Temporary key generation directory (automatically cleaned up)
+
+.SH SEE ALSO
+.BR zfht (8),
+.BR zfht-update-serial (8),
+.BR dnssec-keygen (8),
+.BR dnssec-signzone (8)
+.SH AUTHOR
+Rop Gonggrijp, 2025

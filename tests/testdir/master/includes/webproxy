@@ -1,0 +1,7 @@
+@		IN	CAA		0 issue "letsencrypt.org"
+		IN	A		65.109.148.215
+		IN	AAAA    2a01:4f9:3100:4b60:1004::1
+
+*		IN	CAA		0 issue "letsencrypt.org"
+		IN	A		65.109.148.215
+		IN	AAAA    2a01:4f9:3100:4b60:1004::1

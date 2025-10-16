@@ -1,0 +1,4 @@
+No previous run information found. To initialize, use 'zfht -a'
+to process all files as if they just appeared, or 'zfht -w' to
+store state and only process subsequent changes on next run.
+Returned: 0

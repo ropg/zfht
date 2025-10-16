@@ -1,0 +1,16 @@
+zfht
+zfht -w
+zfht -a -d
+zfht -a
+touch $M/includes/lockpick-server
+zfht -d
+zfht
+touch $M/carla.nl
+zfht -d
+zfht
+cp $M/carla.nl $M/newdomain.nl
+rm $M/gonggri.jp
+zfht -d
+zfht
+zfht -w
+zfht-sign -q carla.nl master/carla.nl

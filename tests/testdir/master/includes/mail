@@ -1,0 +1,7 @@
+@		IN	MX	0 mail.rop.nl.
+		IN	TXT	"v=spf1 mx ~all"
+
+*		IN	MX	0 mail.rop.nl.
+		IN	TXT	"v=spf1 mx ~all"
+
+key1._domainkey IN TXT "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDEz/oG2GvyEjd8GaZQeWWZEelLUNI7zQ8h2Qpj4Ng3HoGO5+cBWlONWwcbBNRn0+8KSewH7bg7N97eU6unoA1tg5QTgre+kgsZrlk2kEjdyQJ3ga3FE2HupYxTvzBQeH42La2LvCRPcqSJ9jrtShSRbqiXxa8ZOhB3BDVDNYe6pQIDAQAB"

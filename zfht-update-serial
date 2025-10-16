@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Usage: zfht-update-serial [-q] <zone_file>
+# Updates SOA serial number in NSD zone file. -q is silent if no serial found.
+
+[ "$1" = "-q" ] && QUIET=1 && shift
+
+USAGE="Usage: zfht-update-serial [-q] <zone_file>"  
+
+[ $# -ne 1 ] && echo "$USAGE" >&2 && exit 1
+
+[ ! -f "$1" ] && echo "Error: file $1 not found" >&2 && exit 1
+
+ZONE_FILE="$1"
+TODAY=${ZFHT_TODAY:-$(date +%Y%m%d)}    # overridden by ZFHT_TODAY env var so test output is deterministic.
+
+# handle single-line and multi-line SOA
+CURRENT_SERIAL=$(LC_ALL=C awk '{ sub(/[[:space:]]*;.*/, ""); if ($0=="") next; for (i=1; i<=NF; i++) { if (!seen_soa && $i=="SOA") { seen_soa=1; continue } if (seen_soa) { gsub(/[()]/, "", $i); if ($i ~ /^[0-9]+$/) { print $i; exit } } } }' "$ZONE_FILE" 2>/dev/null)
+
+[ -z "$CURRENT_SERIAL" ] && { [ "$QUIET" ] && exit 0; echo "No SOA record found in $ZONE_FILE" >&2; exit 1; }
+
+NEW_SERIAL=$(if echo "$CURRENT_SERIAL" | grep -q "^$TODAY[0-9][0-9]$"; then expr "$CURRENT_SERIAL" + 1; else echo "${TODAY}01"; fi)
+
+# Update only the first occurrence of the serial in the file (BSD sed compatible)
+# Limit edits to the range from start until the first line that matches CURRENT_SERIAL,
+# and perform a single substitution on that line only.
+sed -i "" "1,/$CURRENT_SERIAL/ s/$CURRENT_SERIAL/$NEW_SERIAL/" "$ZONE_FILE"
+
+echo "Updated serial from $CURRENT_SERIAL to $NEW_SERIAL in $ZONE_FILE"
