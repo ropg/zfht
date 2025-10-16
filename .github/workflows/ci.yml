@@ -27,16 +27,17 @@ jobs:
 
       - name: Commit and push docs
         if: github.event_name != 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.DOCS_TOKEN }}
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git remote set-url origin https://${{ secrets.DOCS_TOKEN }}@github.com/${{ github.repository }}.git
           git add docs/
           if git diff --staged --quiet; then
             echo "No docs changes to commit"
           else
             git commit -m "Auto-generated docs from man pages"
-            git push
+            git push https://${{ secrets.DOCS_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
           fi
 
       - name: Shell syntax check
