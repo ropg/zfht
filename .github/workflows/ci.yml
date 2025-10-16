@@ -19,6 +19,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mandoc shellcheck dnsutils
 
+      - name: Install scripts
+        run: make install PREFIX=$PWD/local
+
       - name: Generate docs
         run: make docs
 
@@ -26,5 +29,5 @@ jobs:
         run: sh -n zfht zfht-update-serial zfht-sign
 
       - name: Run tests
-        run: make test
+        run: PATH=$PWD/local/bin:$PATH make test
         
