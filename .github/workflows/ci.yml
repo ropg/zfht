@@ -14,10 +14,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install mandoc, shellcheck, and dnsutils
+      - name: Install mandoc, shellcheck, and bind9utils
         run: |
           sudo apt-get update
-          sudo apt-get install -y mandoc shellcheck dnsutils
+          sudo apt-get install -y mandoc shellcheck bind9utils
 
       - name: Install scripts
         run: make install PREFIX=$PWD/local
