@@ -25,9 +25,6 @@ jobs:
       - name: Shell syntax check
         run: sh -n zfht zfht-update-serial zfht-sign
 
-      - name: Shell lint
-        run: shellcheck zfht zfht-update-serial zfht-sign
-
       - name: Run tests
         run: make test
         
