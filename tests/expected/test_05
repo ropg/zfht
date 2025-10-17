@@ -1,1 +1,29 @@
-Returned: 0
+$ mv $M/l1nk.click $M/newdomain.nl
+
+$ zfht -d
+=== CHANGED FILES ===
+<none>
+
+=== INCLUDERS (include changed files, recursively) ===
+<none>
+
+=== INCLUDED FILES (by all above, recursively) ===
+<none>
+
+=== ADDED ZONEFILES ===
+master/newdomain.nl
+
+=== DELETED ZONEFILES ===
+master/l1nk.click
+
+=== AFFECTED ZONEFILES ===
+<none>
+
+=== ACTIONS TAKEN (if this weren't a dry run) ===
+master/.zfht/addzone newdomain.nl master/newdomain.nl
+master/.zfht/delzone l1nk.click master/l1nk.click
+_write_lastrun
+
+$ zfht
+Stored state, next run will process changes from now on.
+

@@ -1,29 +1,5 @@
-=== CHANGED FILES ===
-master/includes/lockpick-server
+$ zfht-sign -q carla.nl master/carla.nl
+Generating KSK key for carla.nl
+Generating ZSK key for carla.nl
+Signed zone carla.nl
 
-=== INCLUDERS (include changed files, recursively) ===
-master/lockpicken.nl
-
-=== INCLUDED FILES (by all above, recursively) ===
-master/includes/dns
-master/includes/mail
-master/includes/lockpick-server
-
-=== ADDED ZONEFILES ===
-<none>
-
-=== DELETED ZONEFILES ===
-<none>
-
-=== AFFECTED ZONEFILES ===
-master/lockpicken.nl
-
-=== ACTIONS TAKEN (if this weren't a dry run) ===
-zfht-update-serial -q master/includes/lockpick-server
-zfht-update-serial -q master/lockpicken.nl
-zfht-update-serial -q master/includes/dns
-zfht-update-serial -q master/includes/mail
-zfht-update-serial -q master/includes/lockpick-server
-master/.zfht/modzone lockpicken.nl master/lockpicken.nl
-_write_lastrun
-Returned: 0

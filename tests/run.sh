@@ -40,14 +40,18 @@ FAILED=0
 while read -r cmd; do
     [ -z "$cmd" ] && continue
     TOTAL=$((TOTAL+1))
+    printf "Test #$TOTAL: $cmd ... "
     FILENUM=$(printf "%02d" $TOTAL)
     outfile="$OUTDIR/test_$FILENUM"
     expected="$EXPECTED_DIR/test_$FILENUM"
-    printf "Running: $cmd ... "
-    # Run command capturing both stdout and stderr
-    eval "$cmd" >"$outfile" 2>&1
-    # Append return code to output file so it is matched too.
-    echo "Returned: $?" >>"$outfile"
+    IFS=';'; for cmdpart in $cmd; do
+        # Run command capturing both stdout and stderr
+        echo "\$ ${cmdpart# }" >>"$outfile"
+        eval "$cmdpart" >>"$outfile" 2>&1
+        # Append non-zero return code to output file so it is matched too.
+        e=$?; [ "$e" -ne 0 ] && echo "Returned: $e" >>"$outfile"
+        echo "" >>"$outfile"
+    done
 
     if [ "$MODE" = "write" ]; then
         cp "$outfile" "$expected"
