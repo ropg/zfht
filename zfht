@@ -73,21 +73,6 @@ ZONESSUBDIR="${ZONESSUBDIR#$ZONESDIR/}"  # Strip in case we got full path
 # Name of file that stores list of zone files present at last run, mtime serves as timestamp
 LASTRUN_FILE="$ZONESSUBDIR/.zfht/lastrun"
 
-# Resolve file arguments to their paths relative to ZONESDIR
-if [ "$FILEMODE" ]; then
-    for file in "$@"; do
-        [ ! -f "$file" ] && _err "File $file not found"
-        # Get absolute path, then check if it's within ZONESDIR
-        abs_file="$(cd "$(dirname "$file")" && pwd)/$(basename "$file")"
-        case "$abs_file" in
-            "$ZONESDIR"/*) RESOLVED_ARGS="$RESOLVED_ARGS ${abs_file#$ZONESDIR/}" ;;
-            *) _err "File $file is not within $ZONESDIR" ;;
-        esac
-    done
-    # Replace $@ with resolved args
-    set -- $RESOLVED_ARGS
-fi
-
 # Everything now relative to ZONESDIR
 cd "$ZONESDIR"
 
@@ -106,6 +91,9 @@ LASTRUN_ZONEFILES=$(cat $LASTRUN_FILE 2>/dev/null)
 # CHANGED
 if [ "$FILEMODE" ]; then
     CHANGED="$@"
+    for file in $CHANGED; do
+        [ ! -f "$file" ] && _err "File $file not found"
+    done
 elif [ "$DO_ALL" ]; then
     CHANGED="$ALL_FILES"
 elif [ -f "$LASTRUN_FILE" ]; then
