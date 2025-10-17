@@ -40,8 +40,9 @@ FAILED=0
 while read -r cmd; do
     [ -z "$cmd" ] && continue
     TOTAL=$((TOTAL+1))
-    outfile="$OUTDIR/file$TOTAL"
-    expected="$EXPECTED_DIR/file$TOTAL"
+    FILENUM=$(printf "%02d" $TOTAL)
+    outfile="$OUTDIR/test_$FILENUM"
+    expected="$EXPECTED_DIR/test_$FILENUM"
     printf "Running: $cmd ... "
     # Run command capturing both stdout and stderr
     eval "$cmd" >"$outfile" 2>&1
