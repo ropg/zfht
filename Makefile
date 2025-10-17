@@ -6,27 +6,7 @@ BINDIR ?= $(PREFIX)/bin
 SCRIPTS = zfht zfht-update-serial zfht-sign
 MANPAGES = man/man8/zfht.8 man/man8/zfht-update-serial.8 man/man8/zfht-sign.8
 
-.PHONY: all docs test install uninstall clean
-
-all: docs
-
-docs:
-	@mkdir -p docs
-	@for m in $(MANPAGES); do \
-		base=$$(basename $$m .8); \
-		echo "Converting $$m to docs/$$base.md..."; \
-		if mandoc -T html $$m 2>/dev/null | pandoc -f html -t gfm -o docs/$$base.md 2>/dev/null && [ -s docs/$$base.md ]; then \
-			echo "generated docs/$$base.md (via mandoc+html+pandoc)"; \
-		elif pandoc -s -f man -t gfm $$m -o docs/$$base.md 2>/dev/null && [ -s docs/$$base.md ]; then \
-			echo "generated docs/$$base.md (via pandoc)"; \
-		else \
-			echo "ERROR: Failed to convert $$m to markdown"; \
-			echo "Creating placeholder for $$m"; \
-			echo "# $$base" > docs/$$base.md; \
-			echo "" >> docs/$$base.md; \
-			echo "Manual page: \`$$m\`" >> docs/$$base.md; \
-		fi; \
-	done
+.PHONY: test test-baseline install uninstall
 
 test:
 	@sh tests/run.sh
@@ -53,7 +33,3 @@ uninstall:
 	@for m in $(MANPAGES); do \
 		rm -f $(DESTDIR)$(MANDIR)/man8/$$(basename $$m); \
 	done
-
-clean:
-	rm -rf docs
-

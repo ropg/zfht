@@ -13,32 +13,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.DOCS_TOKEN }}
 
-      - name: Install mandoc, shellcheck, bind9utils, and pandoc
+      - name: Install bind9utils
         run: |
           sudo apt-get update
-          sudo apt-get install -y mandoc shellcheck bind9utils pandoc
+          sudo apt-get install -y bind9utils
 
       - name: Install scripts
         run: make install PREFIX=$PWD/local
-
-      - name: Generate docs
-        run: make docs
-
-      - name: Commit and push docs
-        if: github.event_name != 'pull_request'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add -f docs/
-          if git diff --staged --quiet; then
-            echo "No docs changes to commit"
-          else
-            git commit -m "Auto-generated docs from man pages"
-            git push
-          fi
 
       - name: Shell syntax check
         run: sh -n zfht zfht-update-serial zfht-sign
