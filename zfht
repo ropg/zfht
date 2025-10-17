@@ -155,7 +155,7 @@ for file in $CHANGED $INCLUDERS; do
 done
 _dbg "=== AFFECTED ZONEFILES ===" ${AFFECTED_ZONEFILES:-<none>} ""
 
-# So far was all about figuring things out. Only below this point are we doing things.
+# So far was all about figuring things out. Only below this point are we modifying things.
 _dbg "=== ACTIONS TAKEN (if this weren't a dry run) ==="
 
 # update any SOA serial numbers in any of the affected files
@@ -164,7 +164,9 @@ for file in $CHANGED $INCLUDERS $INCLUDED; do
 done
 
 # -t: touch files that depend on changed files
-[ "$TOUCH" ] && for file in $INCLUDERS; do _exec touch "$file"; done
+[ "$TOUCH" ] && for file in $INCLUDERS; do 
+    if [ "$DRY" ]; then echo "touch $file"; else echo "Touched $file"; touch "$file"; fi;
+done
 
 # run any user-provided scripts
 for zonefile in $ADDED_ZONEFILES; do
