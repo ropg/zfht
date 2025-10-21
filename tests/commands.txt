@@ -1,6 +1,7 @@
 zfht; zfht -w
+zfht -d master/missing-include.com; rm master/missing-include.com
 zfht -a -d; zfht -a
-touch $M/includes/lockpick-server; zfht -d -t; zfht -t
-touch $M/carla.nl; zfht -d; zfht
-mv $M/l1nk.click $M/newdomain.nl; zfht -d; zfht
-zfht-sign -q carla.nl master/carla.nl
+touch master/includes/lockpick-server; zfht -d -t; zfht -t
+touch master/carla.nl; zfht -d; zfht
+mv master/l1nk.click master/newdomain.nl; zfht -d; zfht
+zfht-sign -q carla.nl master/carla.nl; [ $(wc -l signed/carla.nl | awk '{print $1}') -gt 100 ] && echo "100+ lines"

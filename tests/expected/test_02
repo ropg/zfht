@@ -1,50 +1,12 @@
-$ zfht -a -d
+$ zfht -d master/missing-include.com
 === CHANGED FILES ===
-master/carla.nl
-master/flor.is
-master/gonggri.jp
-master/iborderctrl.no
-master/includes/dns
-master/includes/lockpick-server
-master/includes/mail
-master/includes/webproxy
-master/l1nk.click
-master/lockpicken.nl
+master/missing-include.com
 
-=== ADDED ZONEFILES ===
+=== INCLUDERS (include changed files, recursively) ===
 <none>
 
-=== DELETED ZONEFILES ===
-<none>
+ERROR: File master/includes/error-file-missing (included from master/missing-include.com) not found
+(Returned: 1)
 
-=== AFFECTED ZONEFILES ===
-master/carla.nl
-master/flor.is
-master/gonggri.jp
-master/iborderctrl.no
-master/l1nk.click
-master/lockpicken.nl
-
-=== ACTIONS TAKEN (if this weren't a dry run) ===
-zfht-update-serial -q master/carla.nl
-zfht-update-serial -q master/flor.is
-zfht-update-serial -q master/gonggri.jp
-zfht-update-serial -q master/iborderctrl.no
-zfht-update-serial -q master/includes/dns
-zfht-update-serial -q master/includes/lockpick-server
-zfht-update-serial -q master/includes/mail
-zfht-update-serial -q master/includes/webproxy
-zfht-update-serial -q master/l1nk.click
-zfht-update-serial -q master/lockpicken.nl
-master/.zfht/modzone carla.nl master/carla.nl
-master/.zfht/modzone flor.is master/flor.is
-master/.zfht/modzone gonggri.jp master/gonggri.jp
-master/.zfht/modzone iborderctrl.no master/iborderctrl.no
-master/.zfht/modzone l1nk.click master/l1nk.click
-master/.zfht/modzone lockpicken.nl master/lockpicken.nl
-_write_lastrun
-
-$ zfht -a
-Updated serial from 2025101305 to 2026030301 in master/includes/dns
-Stored state, next run will process changes from now on.
+$ rm master/missing-include.com
 

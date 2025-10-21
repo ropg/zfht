@@ -1,38 +1,44 @@
-$ touch $M/includes/lockpick-server
-
-$ zfht -d -t
+$ zfht -a -d
 === CHANGED FILES ===
-master/includes/lockpick-server
-
-=== INCLUDERS (include changed files, recursively) ===
-master/lockpicken.nl
-
-=== INCLUDED FILES (by all above, recursively) ===
+master/carla.nl
+master/flor.is
+master/gonggri.jp
+master/iborderctrl.no
 master/includes/dns
-master/includes/mail
 master/includes/lockpick-server
+master/includes/mail
+master/includes/webproxy
+master/l1nk.click
+master/lockpicken.nl
 
 === ADDED ZONEFILES ===
 <none>
 
 === DELETED ZONEFILES ===
-<none>
+master/missing-include.com
 
 === AFFECTED ZONEFILES ===
+master/carla.nl
+master/flor.is
+master/gonggri.jp
+master/iborderctrl.no
+master/l1nk.click
 master/lockpicken.nl
 
 === ACTIONS TAKEN (if this weren't a dry run) ===
-zfht-update-serial -q master/includes/lockpick-server
-zfht-update-serial -q master/lockpicken.nl
+zfht-update-serial -q master/carla.nl
+zfht-update-serial -q master/flor.is
+zfht-update-serial -q master/gonggri.jp
+zfht-update-serial -q master/iborderctrl.no
 zfht-update-serial -q master/includes/dns
-zfht-update-serial -q master/includes/mail
 zfht-update-serial -q master/includes/lockpick-server
-touch master/lockpicken.nl
-master/.zfht/modzone lockpicken.nl master/lockpicken.nl
+zfht-update-serial -q master/includes/mail
+zfht-update-serial -q master/includes/webproxy
+zfht-update-serial -q master/l1nk.click
+zfht-update-serial -q master/lockpicken.nl
 _write_lastrun
 
-$ zfht -t
-Updated serial from 2026030301 to 2026030302 in master/includes/dns
-Touched master/lockpicken.nl
+$ zfht -a
+Updated serial from 2025101305 to 3000030301 in master/includes/dns
 Stored state, next run will process changes from now on.
 

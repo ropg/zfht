@@ -1,16 +1,16 @@
-$ touch $M/carla.nl
+$ touch master/includes/lockpick-server
 
-$ zfht -d
+$ zfht -d -t
 === CHANGED FILES ===
-master/carla.nl
+master/includes/lockpick-server
 
 === INCLUDERS (include changed files, recursively) ===
-<none>
+master/lockpicken.nl
 
 === INCLUDED FILES (by all above, recursively) ===
 master/includes/dns
 master/includes/mail
-master/includes/webproxy
+master/includes/lockpick-server
 
 === ADDED ZONEFILES ===
 <none>
@@ -19,17 +19,19 @@ master/includes/webproxy
 <none>
 
 === AFFECTED ZONEFILES ===
-master/carla.nl
+master/lockpicken.nl
 
 === ACTIONS TAKEN (if this weren't a dry run) ===
-zfht-update-serial -q master/carla.nl
+zfht-update-serial -q master/includes/lockpick-server
+zfht-update-serial -q master/lockpicken.nl
 zfht-update-serial -q master/includes/dns
 zfht-update-serial -q master/includes/mail
-zfht-update-serial -q master/includes/webproxy
-master/.zfht/modzone carla.nl master/carla.nl
+zfht-update-serial -q master/includes/lockpick-server
+touch master/lockpicken.nl
 _write_lastrun
 
-$ zfht
-Updated serial from 2026030302 to 2026030303 in master/includes/dns
+$ zfht -t
+Updated serial from 3000030301 to 3000030302 in master/includes/dns
+Touched master/lockpicken.nl
 Stored state, next run will process changes from now on.
 

@@ -3,44 +3,40 @@
 MODE=$1 # 'write' (re)writes expected.
 
 fail() { echo "TEST FAIL: $*" >&2; exit 1; }
-info() { echo "[info] $*" >&2; }
 
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT INT TERM
 
-# Prepare sandbox with testdir/master
+# Prepare sandbox with testzones/master
 mkdir -p "$WORKDIR"
-cp -R "tests/testdir" "$WORKDIR/"
-ZONESDIR="$WORKDIR/testdir"
+cp -R "tests/testzones" "$WORKDIR/"
+ZONESDIR="$WORKDIR/testzones"
 ZONESSUBDIR=master
-
 OUTDIR="$WORKDIR/out"
 mkdir -p "$OUTDIR"
-EXPECTED_DIR="tests/expected"
+
+ORIGDIR=$(pwd)
+EXPECTED_DIR="$ORIGDIR/tests/expected"
 [ "$MODE" = "write" ] && rm -rf "$EXPECTED_DIR" && mkdir -p "$EXPECTED_DIR"
 
 # Export vars for test commands
-export ZONESDIR ZONESSUBDIR WORKDIR
-
-# Add current directory to front of PATH so we run our own commands from it.
-export PATH="$(pwd):$PATH"
+export ZONESDIR ZONESSUBDIR
 
 # Override today's date so test output is deterministic.
 # This is used by zfht-update-serial to generate the next serial number.
-# Just needs to be after any date in test files.
-export ZFHT_TODAY=20260303
-
-# shorthand
-M=$ZONESDIR/$ZONESSUBDIR
+# Just needs to be after any SOA serial number in test files.
+# (Note the Y3k problem here, please adjust latest Jan 2900.)
+export ZFHT_TODAY=30000303
 
 TOTAL=0
 PASSED=0
 FAILED=0
 
+cd "$ZONESDIR"
 while read -r cmd; do
     [ -z "$cmd" ] && continue
     TOTAL=$((TOTAL+1))
-    printf "Test #$TOTAL: $cmd ... "
+    printf "Test #$TOTAL: $cmd  ...  "
     FILENUM=$(printf "%02d" $TOTAL)
     outfile="$OUTDIR/test_$FILENUM"
     expected="$EXPECTED_DIR/test_$FILENUM"
@@ -49,7 +45,7 @@ while read -r cmd; do
         echo "\$ ${cmdpart# }" >>"$outfile"
         eval "$cmdpart" >>"$outfile" 2>&1
         # Append non-zero return code to output file so it is matched too.
-        e=$?; [ "$e" -ne 0 ] && echo "Returned: $e" >>"$outfile"
+        e=$?; [ "$e" -ne 0 ] && echo "(Returned: $e)" >>"$outfile"
         echo "" >>"$outfile"
     done
 
@@ -73,7 +69,7 @@ while read -r cmd; do
         diff -u "$expected" "$outfile"
         FAILED=$((FAILED+1))
     fi
-done < tests/commands.txt
+done < $ORIGDIR/tests/commands.txt
 
 if [ "$MODE" = "write" ]; then
     echo "Wrote expected outputs to $EXPECTED_DIR"

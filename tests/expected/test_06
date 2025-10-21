@@ -1,5 +1,27 @@
-$ zfht-sign -q carla.nl master/carla.nl
-Generating KSK key for carla.nl
-Generating ZSK key for carla.nl
-Signed zone carla.nl
+$ mv master/l1nk.click master/newdomain.nl
+
+$ zfht -d
+=== CHANGED FILES ===
+<none>
+
+=== INCLUDERS (include changed files, recursively) ===
+<none>
+
+=== INCLUDED FILES (by all above, recursively) ===
+<none>
+
+=== ADDED ZONEFILES ===
+master/newdomain.nl
+
+=== DELETED ZONEFILES ===
+master/l1nk.click
+
+=== AFFECTED ZONEFILES ===
+<none>
+
+=== ACTIONS TAKEN (if this weren't a dry run) ===
+_write_lastrun
+
+$ zfht
+Stored state, next run will process changes from now on.
 

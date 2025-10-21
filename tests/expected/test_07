@@ -1,0 +1,8 @@
+$ zfht-sign -q carla.nl master/carla.nl
+Generating KSK key for carla.nl
+Generating ZSK key for carla.nl
+Signed zone carla.nl, output in signed/carla.nl
+
+$ [ $(wc -l signed/carla.nl | awk '{print $1}') -gt 100 ] && echo "100+ lines"
+100+ lines
+

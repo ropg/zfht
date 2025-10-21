@@ -1,29 +1,34 @@
-$ mv $M/l1nk.click $M/newdomain.nl
+$ touch master/carla.nl
 
 $ zfht -d
 === CHANGED FILES ===
-<none>
+master/carla.nl
 
 === INCLUDERS (include changed files, recursively) ===
 <none>
 
 === INCLUDED FILES (by all above, recursively) ===
-<none>
+master/includes/dns
+master/includes/mail
+master/includes/webproxy
 
 === ADDED ZONEFILES ===
-master/newdomain.nl
-
-=== DELETED ZONEFILES ===
-master/l1nk.click
-
-=== AFFECTED ZONEFILES ===
 <none>
 
+=== DELETED ZONEFILES ===
+<none>
+
+=== AFFECTED ZONEFILES ===
+master/carla.nl
+
 === ACTIONS TAKEN (if this weren't a dry run) ===
-master/.zfht/addzone newdomain.nl master/newdomain.nl
-master/.zfht/delzone l1nk.click master/l1nk.click
+zfht-update-serial -q master/carla.nl
+zfht-update-serial -q master/includes/dns
+zfht-update-serial -q master/includes/mail
+zfht-update-serial -q master/includes/webproxy
 _write_lastrun
 
 $ zfht
+Updated serial from 3000030302 to 3000030303 in master/includes/dns
 Stored state, next run will process changes from now on.
 
