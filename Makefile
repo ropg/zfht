@@ -22,8 +22,9 @@ install:
 	done
 	@install -d $(DESTDIR)$(MANDIR)/man8
 	@for m in $(MANPAGES); do \
-		install -m 0644 $$m $(DESTDIR)$(MANDIR)/man8/; \
-		echo "installed $(DESTDIR)$(MANDIR)/man8/$$(basename $$m)"; \
+		base=$$(basename $$m); \
+		gzip -nc9 $$m > $(DESTDIR)$(MANDIR)/man8/$$base.gz; \
+		echo "installed $(DESTDIR)$(MANDIR)/man8/$$base.gz"; \
 	done
 
 uninstall:
@@ -31,5 +32,6 @@ uninstall:
 		rm -f $(DESTDIR)$(BINDIR)/$$s; \
 	done
 	@for m in $(MANPAGES); do \
-		rm -f $(DESTDIR)$(MANDIR)/man8/$$(basename $$m); \
+		base=$$(basename $$m); \
+		rm -f $(DESTDIR)$(MANDIR)/man8/$$base.gz; \
 	done
