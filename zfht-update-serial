@@ -6,18 +6,18 @@
 [ "$1" = "-q" ] && QUIET=1 && shift
 
 USAGE="Usage: zfht-update-serial [-q] <zone_file>"  
-
 [ $# -ne 1 ] && echo "$USAGE" >&2 && exit 1
-
-[ ! -f "$1" ] && echo "Error: file $1 not found" >&2 && exit 1
-
 ZONE_FILE="$1"
-TODAY=${ZFHT_TODAY:-$(date +%Y%m%d)}    # overridden by ZFHT_TODAY env var so test output is deterministic.
+[ ! -f "$ZONE_FILE" ] && echo "Error: file $ZONE_FILE not found" >&2 && exit 1
+
+# date overridden by ZFHT_TODAY env var so test output is deterministic.
+TODAY=${ZFHT_TODAY:-$(date +%Y%m%d)}
 
 # handle single-line and multi-line SOA
 CURRENT_SERIAL=$(LC_ALL=C awk '{ sub(/[[:space:]]*;.*/, ""); if ($0=="") next; for (i=1; i<=NF; i++) { if (!seen_soa && $i=="SOA") { seen_soa=1; continue } if (seen_soa) { gsub(/[()]/, "", $i); if ($i ~ /^[0-9]+$/) { print $i; exit } } } }' "$ZONE_FILE" 2>/dev/null)
 
-[ -z "$CURRENT_SERIAL" ] && { [ "$QUIET" ] && exit 0; echo "No SOA record found in $ZONE_FILE" >&2; exit 1; }
+[ -z "$CURRENT_SERIAL" ] && [ "$QUIET" ] && exit 0
+[ -z "$CURRENT_SERIAL" ] && echo "No SOA record found in $ZONE_FILE" >&2 && exit 1
 
 if echo "$CURRENT_SERIAL" | grep -q "^${TODAY}[0-9][0-9]$"; then
     NEW_SERIAL=$((CURRENT_SERIAL + 1))

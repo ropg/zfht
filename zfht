@@ -1,11 +1,11 @@
 #!/bin/sh
 
-USAGE="Usage: zfht [-d] [-a] [-t] [-z <zonesdir>] [-s <zonessubdir>] [file_patterns...]"
+USAGE="Usage: zfht [-d] [-a] [-t] [-w] [-z <zonesdir>] [-s <zonessubdir>] [files...]"
 
 # Helper functions
 _add_to() { eval "v=\${$1}"; ! _is_in "$v" "$2" && eval "$1=\"$v $2\""; }
 _dbg() { [ "$DRY" ] && for _dbgline in "$@"; do echo "$_dbgline" >&1; done; }
-_err() { printf "ERROR: "; for _errline in "$@"; do echo "$_errline" >&2; done; exit 1; }
+_err() { printf "ERROR: " >&2; for _errline in "$@"; do echo "$_errline" >&2; done; exit 1; }
 _exec() { [ "$DRY" ] && echo "$@" || "$@"; }
 _find_includers() {
     for file in $ALL_FILES; do
@@ -15,7 +15,7 @@ _find_includers() {
 _find_includes() {
     for include in $(awk '/^\$INCLUDE[[:space:]]+"/ {gsub(/"/, "", $2); print $2}' "$1" 2>/dev/null); do
         [ "${include#/}" != "$include" ] && _err "Absolute include path $include not supported"
-        [ ! -f "$include" ] && _err "Include file $include not found"
+        [ ! -f "$include" ] && _err "File $include (included from $1) not found"
         echo "$include"
         _find_includes "$include"    #recurse
     done
@@ -27,8 +27,8 @@ _run_script() {
     script="$ZONESSUBDIR/.zfht/$1"
     zonefile="$2"
     zone=$(basename "$zonefile"); zone=${zone%.zone}
-    [ "$DRY" ] && echo "$script $zone $zonefile" && return 0
     [ ! -x "$script" ] && return 1
+    [ "$DRY" ] && echo "$script $zone $zonefile" && return 0
     $script "$zone" "$zonefile" || ERRORS=1
     return 0
 }
@@ -118,7 +118,8 @@ if [ ! "$DO_ALL" ]; then
     _dbg "=== INCLUDERS (include changed files, recursively) ===" ${INCLUDERS:-<none>} ""
     # INCLUDED: files any of the now indentified files include (recursive)
     for file in $CHANGED $INCLUDERS; do
-        for included in $(_find_includes "$file"); do
+        includes_output=$(_find_includes "$file") || exit 1      # || exit 1: so that _err from subshell stops script
+        for included in $includes_output; do
             ! _is_in CHANGED "$included" && ! _is_in INCLUDERS "$included" && _add_to INCLUDED "$included"
         done
     done
@@ -158,11 +159,16 @@ done
 
 # run any user-provided scripts
 for zonefile in $ADDED_ZONEFILES; do
-    _run_script addzone "$zonefile" || _run_script modzone "$zonefile"      # try modzone if addzone not found
+    # try modzone if no specific addzone script provided
+    _run_script addzone "$zonefile" || _run_script modzone "$zonefile"
 done
 for zonefile in $DELETED_ZONEFILES; do _run_script delzone "$zonefile"; done
 for zonefile in $AFFECTED_ZONEFILES; do _run_script modzone "$zonefile"; done
-[ "$ERRORS" ] && _err "Script(s) failed, lastrun file not updated." "(Everything will be tried again next time.)"
 
-# write lastrun file in timestamp mode
-[ ! "$FILEMODE" ] && _exec _write_lastrun
+# if in file mode, we're done now
+[ "$FILEMODE" ] && exit 0
+
+[ "$ERRORS" ] && _err "One or more user scripts failed, lastrun file not updated." "(Everything will be tried again next time.)"
+
+# write lastrun file
+_exec _write_lastrun
