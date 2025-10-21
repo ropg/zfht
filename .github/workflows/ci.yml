@@ -26,5 +26,5 @@ jobs:
         run: sh -n zfht zfht-update-serial zfht-sign
 
       - name: Run tests
-        run: PATH=$PWD/local/bin:$PATH make test
+        run: PATH=$PWD/local/sbin:$PATH make test
         

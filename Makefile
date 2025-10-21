@@ -1,7 +1,7 @@
 # POSIX-compatible Makefile
 PREFIX ?= /usr/local
 MANDIR ?= $(PREFIX)/share/man
-BINDIR ?= $(PREFIX)/bin
+BINDIR ?= $(PREFIX)/sbin
 
 SCRIPTS = zfht zfht-update-serial zfht-sign
 MANPAGES = man/man8/zfht.8 man/man8/zfht-update-serial.8 man/man8/zfht-sign.8
