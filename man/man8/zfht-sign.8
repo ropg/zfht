@@ -10,13 +10,16 @@ zfht-sign \- Automate key generation and zone file signing for DNSSEC
 \fBzfht-sign\fR lets you generate keys and DNSSEC sign zone files without you having to learn arcane stuff and messing around. It tries to do what I believe is the right thing: it signs zone files using the ECDSAP256SHA256 algorithm, automatically generates KSK (Key Signing Key) and ZSK (Zone Signing Key) if they don't exist and creates a signed version of the zone.
 
 .SH DEPENDENCIES
-\fBzfht-sign\fR depends on \fBdnssec-keygen\fR and \fBdnssec-signzone\fR, which come with the \fBbind nameserver\fR. They are part of the bind tools and need to be installed and in the PATH on the system. Depending on your flavor of unix, the package might be called \fBbind9utils\fR, \fBbind-tools\fR, \fBbind-utils\fR, or the tools might be part of the main \fBbind\fR package. (Note that I would recommend using the \fBnsd\fR nameserver made by NLnet Labs over using bind, we just use bind's tools for dnssec.)
+\fBzfht-sign\fR depends on \fBdnssec-keygen\fR, \fBdnssec-signzone\fR and \fBdnssec-dsfromkey\fR, which all come with the \fBbind nameserver\fR. They are part of the bind tools and need to be installed and in the PATH on the system. Depending on your flavor of unix, the package might be called \fBbind9utils\fR, \fBbind-tools\fR, \fBbind-utils\fR, or the tools might be part of the main \fBbind\fR package. (Note that I would recommend using the \fBnsd\fR nameserver made by NLnet Labs over using bind, we just use bind's tools for dnssec.)
 
 .SH THE ZONESDIR DIRECTORY
 \fBzfht-sign\fR defines a directory it calls \fIZONESDIR\fR that has a \fIkeys\fR and a \fIsigned\fR subdirectory for key and signed zone files respectively. If these do not exist, they will be created. If nothing is specified it assumes it is started from the directory it is supposed to use. You can use the -z option or set the ZONESDIR environment variable to ensure it finds/creates keys and writes files where you want them.
 
 .SH SIGNING A ZONE
 If you invoke \fBzfht-sign\fR with a zone (domain) name and and a zone file as arguments, it will see in the \fIkeys\fR directory if it can find a Zone Signing Key and a Key Signing Key for this zone. If keys are not found, they will be generated. After that's done, the zone file will be parsed, all the records will be signed, and a new signed zone file will be created in the \fIsigned\fR sub-directory.
+
+.SH ROTATING keys
+If you delete KSK or ZSK files for a zone from the \fIkeys/ksk\fR and \fIkeys/zsk\fR directories, \fBzsk-sign\fR will generate new keys when it is next asked to sign the zone file for that zone. But when you're rotating KSK, you probably want some time to change the DS record in the parent zone, and for that new record to propagate. If you move the key files from \fIkeys/ksk\fR to \fIkeys/ksk/old\fR, \fBzsk-sign\fR will generate a new KSK, but sign the ZSK wil the old and the new KSK. Keys moved more than a week ago are ignored.
 
 .SH OPTIONS
 .TP

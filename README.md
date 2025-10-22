@@ -57,7 +57,7 @@ Some other domains I host have e-mail go to Gmail, or handle their own web traff
 
 DNSSEC allows your computer to know that the answer from a DNS server actually came from a computer authorized to tell you the IP number for that specific domain name. But odds are that other than PayPal and your bank, no services you connect to regularly use it. Your domain registrar probably supports you providing them with a public key hash so you can use the corresponding secret key to sign your DNS responses. Wouldn't it be nice to enable DNSSEC for your domains too?
 
-Sure, you can figure out the command line options for generating Key Signing Keys and Zone Signing Keys, using the proper algorithms to not have way-too-long keys and signatures for these small DNS UDP packets. But it's arcane and you can spend an entire evening figuring things out. The default naming of the key files makes it, IMHO, needlessly hard to automate things or understand what is where. It's almost as if the current tools were designed to make sure almost nobody uses DNSSEC.
+Sure, you can figure out the command line options for generating Key Signing Keys and Zone Signing Keys, using the proper algorithms to not have way-too-long keys and signatures for these small DNS UDP packets. But it's arcane and you can spend an entire evening figuring things out. And then there's having to figure out in advance when keys expire, when new keys will come in, all way too complex and you'll end up swimming in numbered key files before you know it. It's almost as if the current tools were designed to make sure almost nobody uses DNSSEC.
 
 ## Introducing `zfht`, the Zone File Helper Tool
 
@@ -71,7 +71,7 @@ git clone https://github.com/ropg/zfht && cd zfht && sudo make install
 
 #### Installing bind tools for DNSSEC using `zfht-sign`
 
-If you want to use `zfht-sign` to serve your DNS records with DNSSEC signatures, you'll need to install two tools: `dnssec-keygen` and `dnssec-signzone`. They come with the nameserver `bind`. In most distributions, they are part of a supplementary tools package. On FreeBSD, the package is called `bind-tools`, on Ubuntu it's called `bind9utils`. They might also come bundled as `bind-utils` or they might ship with the main `bind` package for your distro.
+If you want to use `zfht-sign` to serve your DNS records with DNSSEC signatures, you'll need to install three tools: `dnssec-keygen`, `dnssec-signzone` and `dnssec-dsfromkey`. They come with the nameserver `bind`. In most distributions, they are part of a supplementary tools package. On FreeBSD, the package is called `bind-tools`, on Ubuntu it's called `bind9utils`. They might also come bundled as `bind-utils` or they might ship with the main `bind` package for your distro.
 
 *(Note that while `zfht-sign` uses `bind`'s tools for generating keys, I actually very much recommend using [`NSD`](https://nlnetlabs.nl/projects/nsd/about/), made by NLnet labs, as your actual nameserver.)*
 
@@ -117,6 +117,8 @@ The best part is you won't have to know anything about this. You just provide a 
 All you need to do is tell your nameserver to use the resulting file in `signed` instead of the one in `master` to be serving the signatures along with your other DNS records. To get the benefits of DNSSEC, you then take the line from `keys/ksk/example.com.ds` and enter that in the system your domain registrar has probably set up for this.
 
 The `-q` option is meant for use in scripts and mutes all output from `dnssec-keygen` and `dnssec-signzone`, only showing error messages or single-line success message from `zfht-sign` itself.
+
+*If you move a zone's KSK files to `keys/ksk/old`, `zht-sign` will generate a new KSK, but the old key will also be used to sign the Zone Signing Key. This is to keep everything working in the transition period where you set the new DS record at the registrar and the records propagate. Keys that were moved to `old` more than a week ago are ignored.*
 
 #### `zfht [-d] [-a] [-t] [-w] [-z <zonesdir>] [-s <zonessubdir>] [files...]`
 
@@ -241,8 +243,11 @@ ssh root@5.6.7.8 nsd-control delzone $1 >/dev/null
 
 * The DS record for your registrar is in `keys/ksk/<zone>.ds`. First use [this](https://dnssec-debugger.verisignlabs.com/) tool to verify everything is set up correctly on your end. It should show all green checkmarks except for `No DS records found'. Then set up the DS record at your registrar and ... **Poof! You are serving proper DNSSEC!** (Use tool to test again.)
 
+#### Key management
+
 * To re-sign all zones, do `zfht -a`. To rotate all the Zone Signing Keys, simply do: `rm keys/zsk/* && zfht -a` (You can put these in cron to do them regularly.)
 
-* To rotate a zone's KSK (do people really do that?), delete the zone's key files from `keys/ksk` and run `zfht master/<zone>`.
-
-    * **CAVEAT**: Note that that breaks DNSSEC until you update the DS record at your registrar. One could sign the ZSK with old and new key to prevent this brief outage, but `zfht` does not provide for that yet.
+* When you rotate a zone's KSK, you'll have to change the DS record at the registrar. You will probably want to sign the zone ZSK with the old and the new KSK for a transition period to prevent outages. Simply do
+`mv keys/ksk/<zone>.* keys/ksk/old && zfht master/<zone>`.
+A new KSK will be generated automatically. `zfht-sign` will sign with both the old and the new KSKs, but ignore an old key if it was moved to `keys/ksk/old` more than a week ago. To forget about the old key sooner, simply delete it and re-sign:
+`rm keys/ksk/old/<zone>.* && zfht master/<zone>` 

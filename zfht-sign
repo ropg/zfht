@@ -2,11 +2,11 @@
 
 USAGE="Usage: zfht-sign [-q] [-z <zonesdir>] <zone> <zone_file>"
 
-_do() { [ "$QUIET" ] && "$@" >/dev/null 2>&1 || "$@"; }
+_do() { [ "$QUIET" ] && "$@" >/dev/null 2>&1 || { echo "$@" && "$@"; } }
 _err() { printf "ERROR: " >&2; for _errline in "$@"; do echo "$_errline" >&2; done; exit 1; }
 
 # Check for dependencies
-for cmd in dnssec-signzone dnssec-keygen; do
+for cmd in dnssec-signzone dnssec-keygen dnssec-dsfromkey; do
     which $cmd >/dev/null 2>&1 || _err "$cmd not found" "Please install the bind tools, see man zfht-sign."
 done
 
@@ -35,7 +35,7 @@ cd "$ZONESDIR"
 [ ! -f "$ZONEFILE" ] && _err "Zone file $ZONEFILE not found"
 
 mkdir -p signed
-mkdir -p keys/ksk
+mkdir -p keys/ksk/old
 mkdir -p keys/zsk
 
 KSK_PRIV="keys/ksk/$ZONE.private"
@@ -50,6 +50,7 @@ if [ ! -f "$KSK_PRIV" ] || [ ! -f "$KSK_PUB" ]; then
     _do dnssec-keygen -a ECDSAP256SHA256 -K /tmp/keys_$$ -f KSK "$ZONE"
     mv /tmp/keys_$$/*.private keys/ksk/$ZONE.private
     mv /tmp/keys_$$/*.key keys/ksk/$ZONE.key
+    dnssec-dsfromkey -2 keys/ksk/$ZONE.key > keys/ksk/$ZONE.ds
     rm -rf /tmp/keys_$$
     { [ ! -f "$KSK_PRIV" ] || [ ! -f "$KSK_PUB" ]; } && _err "KSK generation failed for $ZONE" "$QUIET"
 fi
@@ -59,28 +60,39 @@ if [ ! -f "$ZSK_PRIV" ] || [ ! -f "$ZSK_PUB" ]; then
     _do dnssec-keygen -a ECDSAP256SHA256 -K /tmp/keys_$$ "$ZONE"
     mv /tmp/keys_$$/*.private keys/zsk/$ZONE.private
     mv /tmp/keys_$$/*.key keys/zsk/$ZONE.key
+    dnssec-dsfromkey -2 keys/zsk/$ZONE.key > keys/zsk/$ZONE.ds
     rm -rf /tmp/keys_$$
     { [ ! -f "$ZSK_PRIV" ] || [ ! -f "$ZSK_PUB" ]; } && _err "ZSK generation failed for $ZONE" "$QUIET"
 fi
 
+# Sign ZSK also with old KSK
+KSK_OLD_PRIV="keys/ksk/old/$ZONE.private"
+KSK_OLD_PUB="keys/ksk/old/$ZONE.key"
+if [ ! -f "$KSK_OLD_PRIV" ] || [ ! -f "$KSK_OLD_PUB" ]; then
+    unset KSK_OLD_PRIV KSK_OLD_PUB
+elif find "$KSK_OLD_PRIV" -ctime +7 2>/dev/null | grep -q .; then
+    # Ignore if moved there more than a week ago
+    unset KSK_OLD_PRIV KSK_OLD_PUB
+fi
+
 # Designate temporary files and set trap to clean them up on exit
-TMP_ZONE="/tmp/temp_$ZONE_$$"
-TMP_SIGNED="/tmp/signed_$ZONE_$$"
-trap 'rm -f "$TMP_ZONE" "$TMP_SIGNED" >/dev/null 2>&1' EXIT INT TERM
+TMP_ZONEFILE="/tmp/temp_${ZONE}_$$"
+TMP_SIGNED="/tmp/signed_${ZONE}_$$"
+trap 'rm -f "$TMP_ZONEFILE" "$TMP_SIGNED" >/dev/null 2>&1' EXIT INT TERM
 
 # Add DNSKEY records for the public keys to the temporary zone file
-cp $ZONEFILE "$TMP_ZONE"
-echo "" >> "$TMP_ZONE"
-cat "$KSK_PUB" >> "$TMP_ZONE"
-cat "$ZSK_PUB" >> "$TMP_ZONE"
+cp $ZONEFILE "$TMP_ZONEFILE"
+echo "" >> "$TMP_ZONEFILE"
+cat "$KSK_PUB" >> "$TMP_ZONEFILE"
+[ "$KSK_OLD_PUB" ] && cat "$KSK_OLD_PUB" >> "$TMP_ZONEFILE"
+cat "$ZSK_PUB" >> "$TMP_ZONEFILE"
+
+PRIVKEYS="$KSK_PRIV $ZSK_PRIV $KSK_OLD_PRIV"
 
 # Sign the zone using the private keys
-_do dnssec-signzone -f "$TMP_SIGNED" -o "$ZONE" "$TMP_ZONE" "$KSK_PRIV" "$ZSK_PRIV"
+_do dnssec-signzone -f "$TMP_SIGNED" -o "$ZONE" "$TMP_ZONEFILE" $PRIVKEYS
 [ $? -ne 0 ] && _err "dnssec-signzone error code $? when signing zone $ZONE" "$QUIET"
 [ ! -f "$TMP_SIGNED" ] && _err "dnssec-signzone failed to write output for zone $ZONE" "$QUIET"
-
-# Move DS record to keys/ksk directory
-mv dsset-$ZONE. keys/ksk/$ZONE.ds >/dev/null 2>&1
 
 # Move signed zone in place
 mv "$TMP_SIGNED" "signed/$(basename $ZONEFILE)"
