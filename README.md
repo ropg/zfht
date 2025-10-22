@@ -97,7 +97,7 @@ Sub-directory of `ZONESDIR`, specified as relative path. This is where your zone
 
 #### `zfht-update-serial [-q] <zone_file>`
 
-Simplest of the tools, meant to be used by `zfht`, but you can also use it stand-alone. Increases the SOA serial number in a file you specify. Serial numbers use the de-facto standard format `YYYYMMDDSS`, meaning today's zero-padded date, followed by a two-digit increasing number. If it finds today's date already there, it will increase `SS`, otherwise it will use today's date followed by `01`. Handles single line and multi-line SOA record formats. The `-q` option makes it exit silently when no SOA record is found in a file.
+Simplest of the tools, meant to be used by `zfht`, but you can also use it stand-alone. Increases the SOA serial number in a file you specify. The serial number is set to YYYYMMDD01, where YYYYMMDD is today's zero-padded date. In case it is already larger than or equal to that, the number found is simply increased by one. `zfht-update-serial` handles single line and multi-line SOA record formats. The `-q` option makes it exit silently when no SOA record is found in a file.
 
 #### `zfht-sign [-q] [-z <zonesdir>] <zone> <zone_file>`
 

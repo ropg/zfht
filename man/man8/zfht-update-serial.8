@@ -4,7 +4,7 @@ zfht-update-serial \- Update SOA serial number in DNS zone files
 \fBzfht-update-serial\fR [\fB\-q\fR] \fIzone_file\fR
 
 .SH DESCRIPTION
-\fBzfht-update-serial\fR automatically updates the SOA serial number in DNS zone files. Supports both single-line and multi-line SOA record formats. New serial number is in format YYYYMMDDNN where NN is 01 unless a previous serial with today's date was found, in which case the current serial number is incremented by one.
+\fBzfht-update-serial\fR automatically updates the SOA serial number in DNS zone files. Supports both single-line and multi-line SOA record formats. The serial number is set to YYYYMMDD01, where YYYYMMDD is today's zero-padded date. In case it is already larger than or equal to that, the number found is simply increased by one.
 
 \fBzfht-update-serial\fR comes bundled with \fBzfht\fR to manage changes and dependencies in zone files and \fBzfht-sign\fR to completely automate DNSSEC key generation and zone signing. 
 

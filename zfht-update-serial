@@ -19,7 +19,7 @@ CURRENT_SERIAL=$(LC_ALL=C awk '{ sub(/[[:space:]]*;.*/, ""); if ($0=="") next; f
 [ -z "$CURRENT_SERIAL" ] && [ "$QUIET" ] && exit 0
 [ -z "$CURRENT_SERIAL" ] && echo "No SOA record found in $ZONE_FILE" >&2 && exit 1
 
-if echo "$CURRENT_SERIAL" | grep -q "^${TODAY}[0-9][0-9]$"; then
+if [ "$CURRENT_SERIAL" -gt "${TODAY}00" ]; then
     NEW_SERIAL=$((CURRENT_SERIAL + 1))
 else
     NEW_SERIAL="${TODAY}01"
