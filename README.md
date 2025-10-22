@@ -133,18 +133,18 @@ The `-q` option is meant for use in scripts and mutes all output from `dnssec-ke
 
 ### Examples
 
-For the examples we'll assume a FreeBSD system and the use of the NSD nameserver, but you probably get the gist and can adapt the examples to your use case. The nameserver in these examples is in its own FreeBSD jail, and we do everything in that jail as root, so there's no need for chroot operation of NSD. We follow the defaults, so the nameserver files are all in `/usr/local/etc/nsd` and the zone files are in `master` under that. The zone files are named as the zone (without .zone extension) and any included files that make life easier (see introduction at beginning of ths README) are in `master/includes`, or any other directory under `master`.
+For the examples we'll assume a FreeBSD system and the use of the NSD nameserver, but you probably get the gist and can adapt the examples to your use case. The nameserver in these examples is in its own FreeBSD jail, and we do everything in that jail as root, so there's no need for chroot operation of NSD. We follow the defaults, so the nameserver files are all in `/usr/local/etc/nsd` and the zone files are in `master` under that. The zone files are named as the zone (without `.zone` extension) and any included files that make life easier (see introduction at beginning of this README) are in `master/includes`, or any other directory under `master`.
 
-#### Simplest use of `zfht`
-
-For any use of zfht, first we would set (and add to `~/.profile`)
+Before any use of `zfht`, export the environment variables (also add to `~/.profile`)
 
 ```sh
 export ZONESDIR=/usr/local/etc/nsd
 export ZONESSUBDIR=master
 ```
 
-For teh simple usage, let's create an alias:
+#### Simplest use of `zfht`
+
+For the simplest example, let's create an alias:
 `alias reload='zfht -t && nsd-control reload'`
 
 Next, to initialize, you run `zfht -w` once to write a file `master/.zfht/lastrun`. The modification time of that file marks the time the last time `zfht` was ran.
@@ -197,9 +197,9 @@ pattern:
     request-xfr: AXFR 1.2.3.4 transferkey
 ```
 
-* Note that I don't really like using the network port for `nsd-control`. You have to create single-purpose keys, distribute them, there's an extra IP port exposed, meh. Everything works fine locally and without all this complexity if you set a named pipe as `control-interface`. For doing things on the secondary server, we'll use old trusted `ssh`. So on your primary nameserver, generate an ssh keypair for root with `ssh-keygen`, put the public key in `authorized_keys` on the secondary jail, `PermitRootLogin yes` in secondary's `sshd_config` and restart sshd there. Test and add secondary to `known_hosts` on primary by logging into secondary from primary with `ssh root@5.6.7.8`.
+* Note that I don't really like using the network port for `nsd-control`. You have to create single-purpose keys, distribute them, there's an extra IP port exposed, meh. Everything works fine locally and without all this complexity if you set a named pipe as `control-interface`. For doing things on the secondary server, we'll use old trusted `ssh`. So on your primary nameserver, generate an ssh keypair for root with `ssh-keygen`, put the public key in `authorized_keys` on the secondary jail, `PermitRootLogin yes` in secondary's `sshd_config` and restart `sshd` there. Test and add secondary to `known_hosts` on primary by logging into secondary from primary with `ssh root@5.6.7.8`.
 
-  * (Naturally it will all work perfectly well using the network-capabilities of `nsd-control`. In that case just modify the scripts below accordingly.)
+  * (It will all work perfectly well using the network-capabilities of `nsd-control`. In that case just modify the scripts below accordingly.)
 
 * Back to our primary server. Create a directory `.zfht` under `master` and put the following three files in it:
 
@@ -208,9 +208,10 @@ pattern:
 #!/bin/sh
 
 zfht-sign -q $1 master/$1 || exit 1
-echo "Adding zone $1"
-nsd-control addzone $1 master >/dev/null
-ssh root@5.6.7.8 nsd-control addzone $1 slave >/dev/null
+printf "primary   - nsd-control addzone $1 master: "
+nsd-control addzone $1 master
+printf "secondary - nsd-control addzone $1 slave: "
+ssh root@5.6.7.8 nsd-control addzone $1 slave
 ```
 
 **`modzone`**
@@ -218,7 +219,7 @@ ssh root@5.6.7.8 nsd-control addzone $1 slave >/dev/null
 #!/bin/sh
 
 zfht-sign -q $1 master/$1 || exit 1
-printf "nsd-control reload $1: "
+printf "primary   - nsd-control reload $1: "
 nsd-control reload $1
 ```
 
@@ -226,22 +227,23 @@ nsd-control reload $1
 ```
 #!/bin/sh
 
-echo "Deleting zone $1"
-nsd-control delzone $1 >/dev/null
-rm signed/$1 keys/zsk/$1.key keys/zsk/$1.private
-rm keys/ksk/$1.key keys/ksk/$1.private keys/ksk/$1.ds
-ssh root@5.6.7.8 nsd-control delzone $1 >/dev/null
+printf "primary   - nsd-control delzone $1: "
+nsd-control delzone $1
+printf "secondary - nsd-control delzone $1: "
+ssh root@5.6.7.8 nsd-control delzone $1
+rm signed/$1 keys/zsk/$1.*
+mv keys/ksk/$1.* keys/ksk/old
 ```
 
 * Make these files executable with `chmod a+x *zone`
 
-* Run `nsd-control reconfig` on primary and secondary
+* Run `nsd-control reconfig` on primary and secondary to reload config and make sure they use the files from `signed`
 
 * Run `zfht -a` on primary. Any existing zone files in `master` will now have corresponding DNSSEC signed files in `signed` and the server will serve these. Any missing zones will be added on the secondary and zone transfers initiated.
 
-* **And presto, you're in DNS-heaven!** After any change in the master directory, simply run `zfht` to update all the appropriate SOA serial numbers and run the right scripts. Adding a domain is now just adding a minimal file with some `$INCLUDE`s.
+* **And presto, everything is automatic now!** After any change in the master directory, simply run `zfht` to update all the appropriate SOA serial numbers and run the right scripts. Adding a domain is now just adding a minimal file with some `$INCLUDE`s, removing it from the servers is as simple as deleting the zone file.
 
-* The DS record for your registrar is in `keys/ksk/<zone>.ds`. First use [this](https://dnssec-debugger.verisignlabs.com/) tool to verify everything is set up correctly on your end. It should show all green checkmarks except for `No DS records found'. Then set up the DS record at your registrar and ... **Poof! You are serving proper DNSSEC!** (Use tool to test again.)
+* The DS record for your registrar is in `keys/ksk/<zone>.ds`. First use [this](https://dnssec-debugger.verisignlabs.com/) tool to verify everything is set up correctly on your end. It should show all green checkmarks except for `No DS records found'. Then set up the DS record at your registrar and ... **Poof! You are serving proper DNSSEC!** (You can use the same tool to see that that last error is really gone.)
 
 #### Key management
 
